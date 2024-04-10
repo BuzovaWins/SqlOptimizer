@@ -16,8 +16,8 @@ public static class SqlOptimizer
         var whereCondition = query?.GetWhereCondition();
         var groupBy = query?.GetGroupByStatements() ?? new List<Statement>();
 
-        // Если ReplaceFrom вернул null (такое происходит в самом глубоком SELECT, т.е. у которого FROM (Table)),
-        // необходимо начать собирать наш запрос
+        // Р•СЃР»Рё ReplaceFrom РІРµСЂРЅСѓР» null (С‚Р°РєРѕРµ РїСЂРѕРёСЃС…РѕРґРёС‚ РІ СЃР°РјРѕРј РіР»СѓР±РѕРєРѕРј SELECT, С‚.Рµ. Сѓ РєРѕС‚РѕСЂРѕРіРѕ FROM (Table)),
+        // РЅРµРѕР±С…РѕРґРёРјРѕ РЅР°С‡Р°С‚СЊ СЃРѕР±РёСЂР°С‚СЊ РЅР°С€ Р·Р°РїСЂРѕСЃ
         query = query ?? baseQuery;
 
         baseQuery.ReplaceSelect(dict);
@@ -32,7 +32,7 @@ public static class SqlOptimizer
     }
 
     /// <summary>
-    /// Создание соответствия [имя алиаса] -> Statement
+    /// РЎРѕР·РґР°РЅРёРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІРёСЏ [РёРјСЏ Р°Р»РёР°СЃР°] -> Statement
     /// </summary>
     /// <param name="selectStatements"></param>
     /// <returns></returns>
@@ -54,7 +54,7 @@ public static class SqlOptimizer
     }
 
     /// <summary>
-    /// Рекурсивная замена имен столбцов согласно соответствию [имя алиаса] -> Statement
+    /// Р РµРєСѓСЂСЃРёРІРЅР°СЏ Р·Р°РјРµРЅР° РёРјРµРЅ СЃС‚РѕР»Р±С†РѕРІ СЃРѕРіР»Р°СЃРЅРѕ СЃРѕРѕС‚РІРµС‚СЃС‚РІРёСЋ [РёРјСЏ Р°Р»РёР°СЃР°] -> Statement
     /// </summary>
     /// <param name="statements"></param>
     /// <param name="columnNameReplaceDict"></param>
@@ -108,7 +108,7 @@ public static class SqlOptimizer
     }
 
     /// <summary>
-    /// Формирование блока SELECT
+    /// Р¤РѕСЂРјРёСЂРѕРІР°РЅРёРµ Р±Р»РѕРєР° SELECT
     /// </summary>
     /// <param name="query"></param>
     /// <param name="columnNameReplaceDict"></param>
@@ -120,7 +120,7 @@ public static class SqlOptimizer
     }
 
     /// <summary>
-    /// Формирование блока WHERE
+    /// Р¤РѕСЂРјРёСЂРѕРІР°РЅРёРµ Р±Р»РѕРєР° WHERE
     /// </summary>
     /// <param name="query"></param>
     /// <param name="columnNameReplaceDict"></param>
@@ -131,7 +131,7 @@ public static class SqlOptimizer
         var outerWhereCondition = query.GetWhereCondition();
         ReplaceAliases(new List<Statement>() { outerWhereCondition }, columnNameReplaceDict);
 
-        // Добавление WHERE из аргумента к имеющимся 
+        // Р”РѕР±Р°РІР»РµРЅРёРµ WHERE РёР· Р°СЂРіСѓРјРµРЅС‚Р° Рє РёРјРµСЋС‰РёРјСЃСЏ 
         if (oldWhereCondition == null)
             query.SetWhereCondition(outerWhereCondition);
         else if (outerWhereCondition == null)
@@ -141,7 +141,7 @@ public static class SqlOptimizer
     }
 
     /// <summary>
-    /// Формирование блока GROUP BY. Предполагается, что внутри GROUP BY могут быть только Column
+    /// Р¤РѕСЂРјРёСЂРѕРІР°РЅРёРµ Р±Р»РѕРєР° GROUP BY. РџСЂРµРґРїРѕР»Р°РіР°РµС‚СЃСЏ, С‡С‚Рѕ РІРЅСѓС‚СЂРё GROUP BY РјРѕРіСѓС‚ Р±С‹С‚СЊ С‚РѕР»СЊРєРѕ Column
     /// </summary>
     /// <param name="query"></param>
     /// <param name="columnNameReplaceDict"></param>
@@ -154,22 +154,22 @@ public static class SqlOptimizer
         var outerColumns = outerGroupByStatements?.Select(g => (g as Column)?.GetColumn())?.ToList()
             ?? new List<string?>();
 
-        // Замена имен столбцов
+        // Р—Р°РјРµРЅР° РёРјРµРЅ СЃС‚РѕР»Р±С†РѕРІ
         for (int index = 0; index < outerColumns.Count(); index++)
             if (columnNameReplaceDict.ContainsKey(outerColumns[index]))
                 outerColumns[index] = (columnNameReplaceDict[outerColumns[index]] as Column)?.GetColumn();
 
-        // Добавление GROUP BY из агрумента функции к имеющимся
+        // Р”РѕР±Р°РІР»РµРЅРёРµ GROUP BY РёР· Р°РіСЂСѓРјРµРЅС‚Р° С„СѓРЅРєС†РёРё Рє РёРјРµСЋС‰РёРјСЃСЏ
         var oldColumns = oldGroupByStatements?.Select(g => (g as Column)?.GetColumn());
         if (oldColumns != null)
             outerColumns = outerColumns.Union(oldColumns).ToList();
 
-        // Рекурсивное получение списка столбцов, которые используются в функциях
-        // (столбцы под агрегатными функциями потом уберем из GROUP BY)
+        // Р РµРєСѓСЂСЃРёРІРЅРѕРµ РїРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° СЃС‚РѕР»Р±С†РѕРІ, РєРѕС‚РѕСЂС‹Рµ РёСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ РІ С„СѓРЅРєС†РёСЏС…
+        // (СЃС‚РѕР»Р±С†С‹ РїРѕРґ Р°РіСЂРµРіР°С‚РЅС‹РјРё С„СѓРЅРєС†РёСЏРјРё РїРѕС‚РѕРј СѓР±РµСЂРµРј РёР· GROUP BY)
         var select = query.GetSelectStatements();
         var usedColumns = GetUsedColumnsFromStatementTree(select).Distinct();
 
-        // Убираем из итогового списка столбцы, которые используются в функциях
+        // РЈР±РёСЂР°РµРј РёР· РёС‚РѕРіРѕРІРѕРіРѕ СЃРїРёСЃРєР° СЃС‚РѕР»Р±С†С‹, РєРѕС‚РѕСЂС‹Рµ РёСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ РІ С„СѓРЅРєС†РёСЏС…
         outerColumns = outerColumns.Except(usedColumns).ToList();
 
         var results = new List<Statement>();
@@ -180,10 +180,10 @@ public static class SqlOptimizer
     }
 
     /// <summary>
-    /// Рекурсивное получение списка столбцов, которые используются в функциях
+    /// Р РµРєСѓСЂСЃРёРІРЅРѕРµ РїРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° СЃС‚РѕР»Р±С†РѕРІ, РєРѕС‚РѕСЂС‹Рµ РёСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ РІ С„СѓРЅРєС†РёСЏС…
     /// </summary>
     /// <param name="select"></param>
-    /// <param name="inFunction">Флажок для учета только тех имен столбцов, которые внутри функций</param>
+    /// <param name="inFunction">Р¤Р»Р°Р¶РѕРє РґР»СЏ СѓС‡РµС‚Р° С‚РѕР»СЊРєРѕ С‚РµС… РёРјРµРЅ СЃС‚РѕР»Р±С†РѕРІ, РєРѕС‚РѕСЂС‹Рµ РІРЅСѓС‚СЂРё С„СѓРЅРєС†РёР№</param>
     /// <returns></returns>
     private static IEnumerable<string?> GetUsedColumnsFromStatementTree(List<Statement>? select, bool inFunction = false)
     {
@@ -219,7 +219,7 @@ public static class SqlOptimizer
     }
 
     /// <summary>
-    /// Формирование блока FROM (рекурсивно)
+    /// Р¤РѕСЂРјРёСЂРѕРІР°РЅРёРµ Р±Р»РѕРєР° FROM (СЂРµРєСѓСЂСЃРёРІРЅРѕ)
     /// </summary>
     /// <param name="query"></param>
     /// <returns></returns>
